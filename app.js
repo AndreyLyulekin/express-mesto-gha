@@ -1,24 +1,23 @@
-const express = require('express');
-const mongoose = require('mongoose');
+const express = require("express");
+const mongoose = require("mongoose");
 
 const app = express();
 const { PORT = 3000 } = process.env;
-const dbUrl = 'mongodb://localhost:27017/mestodb';
-// eslint-disable-next-line import/no-extraneous-dependencies
-const bodyParser = require('body-parser');
+const dbUrl = "mongodb://localhost:27017/mestodb";
+const bodyParser = require("body-parser");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   req.user = {
-    _id: '650ba582c9c197d236e480dc',
+    _id: "650ba582c9c197d236e480dc",
   };
 
   next();
 });
 
-app.use('/', require('./routes/users'));
-app.use('/', require('./routes/cards'));
+app.use("/", require("./routes/users"));
+app.use("/", require("./routes/cards"));
 
 mongoose
   .connect(dbUrl, {
@@ -27,10 +26,10 @@ mongoose
     family: 4,
   })
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log("Connected to MongoDB");
   })
   .catch((error) => {
-    console.log('Error connecting to MongoDB:', error);
+    console.log("Error connecting to MongoDB:", error);
   });
 
 app.listen(PORT, () => {
