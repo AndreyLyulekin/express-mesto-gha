@@ -8,8 +8,6 @@ module.exports.getCards = (req, res) => {
 
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
-  console.log(req.body);
-  // , owner, likes, createdAt
   const owner = req.user._id;
   Card.create({ name, link, owner })
     .then((card) => res.send({ data: card }))
@@ -29,16 +27,38 @@ module.exports.deleteCard = (req, res) => {
     .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
 };
 
-module.exports.likeCard = (req, res) =>
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
-    { new: true }
-  );
+module.exports.likeCard = (req, res) => {
+  try {
+    Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $addToSet: { likes: req.user._id } },
+      { new: true },
+      (err, card) => {
+        if (err) {
+          throw new Error("Ошибка при лайке карточки");
+        }
+        res.status(200).send(card);
+      }
+    );
+  } catch (error) {
+    res.status(400).send({ message: error.message });
+  }
+};
 
-module.exports.dislikeCard = (req, res) =>
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $pull: { likes: req.user._id } },
-    { new: true }
-  );
+module.exports.dislikeCard = (req, res) => {
+  try {
+    Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $pull: { likes: req.user._id } },
+      { new: true },
+      (err, card) => {
+        if (err) {
+          throw new Error("Ошибка при дизлайке карточки");
+        }
+        res.status(200).send(card);
+      }
+    );
+  } catch (error) {
+    res.status(400).send({ message: error.message });
+  }
+};
