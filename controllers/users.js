@@ -44,10 +44,12 @@ module.exports.createUser = (req, res) => {
 };
 
 module.exports.updateUser = (req, res) => {
-  User.findByIdAndUpdate(req.params.id, {
-    name: "Виктор Гусев",
-    about: 30,
-  })
+  const { name, about } = req.body;
+  User.findByIdAndUpdate(
+    req.user._id,
+    { name, about },
+    { new: "true", runValidators: "true" }
+  )
     .then((user) => {
       if (!user) {
         return res.status(404).send({ message: "Пользователь не найден" });
@@ -60,9 +62,12 @@ module.exports.updateUser = (req, res) => {
 };
 
 module.exports.updateUserAvatar = (req, res) => {
-  User.findByIdAndUpdate(req.params.id, {
-    avatar: "https://www.image.com",
-  })
+  const { avatar } = req.body;
+  User.findByIdAndUpdate(
+    req.user._id,
+    { avatar },
+    { new: "true", runValidators: "true" }
+  )
     .then((user) => {
       if (!user) {
         return res.status(404).send({ message: "Пользователь не найден" });
