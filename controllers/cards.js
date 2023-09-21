@@ -10,7 +10,8 @@ module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
   console.log(req.body);
   // , owner, likes, createdAt
-  Card.create({ name, link })
+  const owner = req.user._id;
+  Card.create({ name, link, owner })
     .then((card) => res.send({ data: card }))
     .catch(() =>
       res.status(400).send({ message: "Переданы некорректные данные" })
