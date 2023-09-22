@@ -39,7 +39,7 @@ module.exports.likeCard = (req, res) =>
       }
       res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch(() => res.status(400).send({ message: "Произошла ошибка" }));
 
 module.exports.dislikeCard = (req, res) =>
   Card.findByIdAndUpdate(
@@ -53,4 +53,4 @@ module.exports.dislikeCard = (req, res) =>
       }
       res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch(() => res.status(400).send({ message: "Произошла ошибка" }));
