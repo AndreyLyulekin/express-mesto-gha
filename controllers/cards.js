@@ -17,8 +17,13 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  console.log(req.params);
-  Card.findByIdAndRemove(req.params.cardId)
+  const objectID = req.params.cardId;
+  const validationRegExp = new RegExp(/\w{24}/gm);
+  const isValidate = validationRegExp.test(objectID);
+  if (!isValidate) {
+    return res.status(400).send({ message: "Переданы некорректные данные" });
+  }
+  Card.findByIdAndRemove(objectID)
     .then((card) => {
       if (!card) {
         return res.status(404).send({ message: "Карточка не найдена" });

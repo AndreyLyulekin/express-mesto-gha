@@ -19,6 +19,14 @@ app.use((req, res, next) => {
 app.use("/", require("./routes/users"));
 app.use("/", require("./routes/cards"));
 
+app.use(function (req, res, next) {
+  res
+    .status(404)
+    .send({
+      message: "Переданы некорректные данные или такого маршрута несуществует",
+    });
+});
+
 mongoose
   .connect(dbUrl, {
     useNewUrlParser: true,
