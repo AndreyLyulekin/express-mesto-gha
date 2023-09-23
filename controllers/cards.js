@@ -3,7 +3,9 @@ const Card = require("../models/card");
 module.exports.getCards = (req, res) => {
   Card.find({})
     .then((cards) => res.send({ data: cards }))
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch(() =>
+      res.status(500).send({ message: "На сервере произошла ошибка" })
+    );
 };
 
 module.exports.createCard = (req, res) => {
@@ -30,7 +32,9 @@ module.exports.deleteCard = (req, res) => {
       }
       res.send({ data: card });
     })
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch(() =>
+      res.status(500).send({ message: "На сервере произошла ошибка" })
+    );
 };
 
 module.exports.likeCard = (req, res) =>
