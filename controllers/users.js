@@ -1,115 +1,122 @@
-const { default: validator } = require("validator");
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const httpConstants = require("http2").constants;
+const mongoose = require("mongoose");
+const BadRequestError = require("../errors/BadRequest");
+const NotFoundError = require("../errors/NotFound");
+const ConflictError = require("../errors/Conflict");
 
-module.exports.getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.send({ data: users }))
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .then((users) => res.status(httpConstants.HTTP_STATUS_OK).send(users))
+    .catch(next);
 };
 
-module.exports.getUser = (req, res) => {
-  User.findById(req.params.id)
+module.exports.getUserById = (req, res, next) => {
+  User.findById(req.params.userId)
+    .orFail()
     .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: "Пользователь не найден" });
-      }
-      res.send({ data: user });
+      res.status(httpConstants.HTTP_STATUS_OK).send(user);
     })
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequestError("Переданы некорректные данные"));
+      } else if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        next(new NotFoundError("Пользователь не найден"));
+      } else {
+        next(err);
+      }
+    });
 };
 
-module.exports.createUser = (req, res) => {
+module.exports.editUserData = (req, res, next) => {
+  const { name, about } = req.body;
+  User.findByIdAndUpdate(
+    req.user._id,
+    { name, about },
+    { new: true, runValidators: true }
+  )
+    .orFail()
+    .then((user) => res.status(httpConstants.HTTP_STATUS_OK).send(user))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        next(new BadRequestError(err.message));
+      } else if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        next(new NotFoundError("Пользователь не найден"));
+      } else {
+        next(err);
+      }
+    });
+};
+
+module.exports.editUserAvatar = (req, res, next) => {
+  User.findByIdAndUpdate(
+    req.user._id,
+    { avatar: req.body.avatar },
+    { new: true, runValidators: true }
+  )
+    .orFail()
+    .then((user) => res.status(httpConstants.HTTP_STATUS_OK).send(user))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        next(new BadRequestError(err.message));
+      } else if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        next(new NotFoundError("Пользователь не найден"));
+      } else {
+        next(err);
+      }
+    });
+};
+
+module.exports.addUser = (req, res, next) => {
   const { name, about, avatar, email, password } = req.body;
-
-  if (!validator.isEmail(email)) {
-    return res.status(400).send({ message: "Некорректный email" });
-  }
-
-  bcrypt.hash(password, 10, (err, hashedPassword) => {
-    if (err) {
-      return res.status(500).send({ message: "Ошибка хэширования пароля" });
-    }
-
-    User.create({ name, about, avatar, email, password: hashedPassword })
-      .then((user) => res.send({ data: user }))
-      .catch(() =>
-        res.status(400).send({ message: "Переданы некорректные данные" })
-      );
-  });
-};
-
-module.exports.updateUser = (req, res) => {
-  User.findByIdAndUpdate(req.params.id, {
-    name: "Виктор Гусев",
-    about: 30,
-  })
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: "Пользователь не найден" });
+  bcrypt
+    .hash(password, 10)
+    .then((hash) =>
+      User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      }).then((user) =>
+        res.status(httpConstants.HTTP_STATUS_CREATED).send({
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+          _id: user._id,
+          email: user.email,
+        })
+      )
+    )
+    .catch((err) => {
+      if (err.code === 11000) {
+        next(new ConflictError("Пользаватель уже зарегистрирован"));
+      } else if (err instanceof mongoose.Error.ValidationError) {
+        next(new BadRequestError(err.message));
+      } else {
+        next(err);
       }
-      res.send({ data: user });
-    })
-    .catch(() =>
-      res.status(400).send({ message: "Переданы некорректные данные" })
-    );
+    });
 };
 
-module.exports.updateUserAvatar = (req, res) => {
-  User.findByIdAndUpdate(req.params.id, {
-    avatar: "https://www.image.com",
-  })
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: "Пользователь не найден" });
-      }
-      res.send({ data: user });
-    })
-    .catch(() =>
-      res.status(400).send({ message: "Переданы некорректные данные" })
-    );
-};
-
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-
-  if (!validator.isEmail(email)) {
-    return res.status(400).send({ message: "Некорректный email" });
-  }
-  // Поиск пользователя по email
-  User.findOne({ email })
-    .select("+password")
+  return User.findUserByCredentials(email, password)
     .then((user) => {
-      if (!user) {
-        return res
-          .status(401)
-          .send({ message: "Неправильные почта или пароль" });
-      }
-
-      // Проверка пароля
-      bcrypt.compare(password, user.password, (err, isMatch) => {
-        if (err || !isMatch) {
-          return res
-            .status(401)
-            .send({ message: "Неправильные почта или пароль" });
-        }
-
-        // Создание JWT токена
-        const token = jwt.sign({ _id: user._id }, "super-secret-key", {
-          expiresIn: "7d",
-        });
-
-        // Отправка токена клиенту
-        res
-          .cookie("token", token, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-          })
-          .send({ message: "Успешный вход" });
+      const token = jwt.sign({ _id: user._id }, "super-secret-key", {
+        expiresIn: "7d",
       });
+      return res.send({ token });
     })
-    .catch(() =>
-      res.status(401).send({ message: "Неправильные почта или пароль" })
-    );
+    .catch((err) => {
+      next(err);
+    });
+};
+
+module.exports.getMeUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((user) => res.status(httpConstants.HTTP_STATUS_OK).send(user))
+    .catch(next);
 };

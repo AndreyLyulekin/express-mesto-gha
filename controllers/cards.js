@@ -1,42 +1,106 @@
 const Card = require("../models/card");
+const httpConstants = require("http2").constants;
+const mongoose = require("mongoose");
+const BadRequestError = require("../errors/BadRequest");
+const NotFoundError = require("../errors/NotFound");
+const ForbiddenError = require("../errors/Forbidden");
 
-module.exports.getCards = (req, res) => {
-  Card.find({})
-    .then((cards) => res.send({ data: cards }))
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
-};
-
-module.exports.createCard = (req, res) => {
-  const { name, link, owner, likes, createdAt } = req.body;
-
-  Card.create({ name, link })
-    .then((card) => res.send({ data: card }))
-    .catch(() =>
-      res.status(400).send({ message: "Переданы некорректные данные" })
-    );
-};
-
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.id)
-    .then((card) => {
-      if (!card) {
-        return res.status(404).send({ message: "Карточка не найдена" });
+module.exports.createCard = (req, res, next) => {
+  const { name, link } = req.body;
+  Card.create({ name, link, owner: req.user._id })
+    .then((card) => res.status(httpConstants.HTTP_STATUS_OK).send(card))
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        next(new BadRequestError(err.message));
+      } else {
+        next(err);
       }
-      res.send({ data: card });
-    })
-    .catch(() => res.status(500).send({ message: "Произошла ошибка" }));
+    });
 };
 
-module.exports.likeCard = (req, res) =>
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
-    { new: true }
-  );
+module.exports.deleteCard = (req, res, next) => {
+  Card.findById(req.params.cardId)
+    .then((card) => {
+      if (!card.owner.equals(req.user._id)) {
+        throw new ForbiddenError("Нет доступа для удаления карточки");
+      }
+      Card.deleteOne(card)
+        .orFail()
+        .then(() => {
+          res
+            .status(httpConstants.HTTP_STATUS_OK)
+            .send({ message: "Карточка удалена" });
+        })
+        .catch((err) => {
+          if (err instanceof mongoose.Error.DocumentNotFoundError) {
+            next(new NotFoundError("Карточка не найдена"));
+          } else if (err instanceof mongoose.Error.CastError) {
+            next(new BadRequestError("Переданы некорректные данные"));
+          } else {
+            next(err);
+          }
+        });
+    })
+    .catch((err) => {
+      if (err.name === "TypeError") {
+        next(new NotFoundError("Карточка не найдена"));
+      } else {
+        next(err);
+      }
+    });
+};
 
-module.exports.dislikeCard = (req, res) =>
+module.exports.getCard = (req, res, next) => {
+  Card.find({})
+    .populate(["owner", "likes"])
+    .then((cards) => res.status(httpConstants.HTTP_STATUS_OK).send(cards))
+    .catch(next);
+};
+
+module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $pull: { likes: req.user._id } },
+    {
+      $addToSet: { likes: req.user._id },
+    },
     { new: true }
-  );
+  )
+    .orFail()
+    .populate(["owner", "likes"])
+    .then((card) => {
+      res.status(httpConstants.HTTP_STATUS_OK).send(card);
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        next(new NotFoundError("Карточка не найдена"));
+      } else if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequestError("Переданы некорректные данные"));
+      } else {
+        next(err);
+      }
+    });
+};
+
+module.exports.dislikeCard = (req, res, next) => {
+  Card.findByIdAndUpdate(
+    req.params.cardId,
+    {
+      $pull: { likes: req.user._id },
+    },
+    { new: true }
+  )
+    .orFail()
+    .populate(["owner", "likes"])
+    .then((card) => {
+      res.status(httpConstants.HTTP_STATUS_OK).send(card);
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.DocumentNotFoundError) {
+        next(new NotFoundError("Карточка не найдена"));
+      } else if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequestError("Переданы некорректные данные"));
+      } else {
+        next(err);
+      }
+    });
+};
