@@ -21,11 +21,14 @@ module.exports.createCard = (req, res, next) => {
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
     .then((card) => {
+      if (!card) {
+        throw new NotFoundError("Карточка не найдена");
+      }
+
       if (!card.owner.equals(req.user._id)) {
         throw new ForbiddenError("Нет доступа для удаления карточки");
       }
       Card.deleteOne(card)
-        .orFail()
         .then(() => {
           res
             .status(httpConstants.HTTP_STATUS_OK)
@@ -34,15 +37,13 @@ module.exports.deleteCard = (req, res, next) => {
         .catch((err) => {
           if (err instanceof mongoose.Error.DocumentNotFoundError) {
             next(new NotFoundError("Карточка не найдена"));
-          } else if (err instanceof mongoose.Error.CastError) {
-            next(new BadRequestError("Переданы некорректные данные"));
           } else {
             next(err);
           }
         });
     })
     .catch((err) => {
-      if (err.name === "TypeError") {
+      if (err instanceof TypeError) {
         next(new NotFoundError("Карточка не найдена"));
       } else {
         next(err);
@@ -52,7 +53,6 @@ module.exports.deleteCard = (req, res, next) => {
 
 module.exports.getCard = (req, res, next) => {
   Card.find({})
-    .populate(["owner", "likes"])
     .then((cards) => res.status(httpConstants.HTTP_STATUS_OK).send(cards))
     .catch(next);
 };
@@ -66,7 +66,6 @@ module.exports.likeCard = (req, res, next) => {
     { new: true }
   )
     .orFail()
-    .populate(["owner", "likes"])
     .then((card) => {
       res.status(httpConstants.HTTP_STATUS_OK).send(card);
     })

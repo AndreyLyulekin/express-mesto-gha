@@ -13,7 +13,7 @@ router.post(
         about: Joi.string().min(2).max(30),
         avatar: Joi.string().pattern(urlValidation),
         email: Joi.string().required().email(),
-        password: Joi.string().required().min(2),
+        password: Joi.string().required(),
       })
       .unknown(true),
   }),
