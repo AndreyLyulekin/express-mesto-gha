@@ -6,7 +6,6 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const { errors } = require("celebrate");
-const NotFoundError = require("./errors/NotFound");
 
 app.use(helmet());
 
@@ -19,10 +18,6 @@ mongoose.connect(DB_URL, {
 });
 
 app.use("/", require("./routes/index"));
-
-app.use("*", (req, res, next) => {
-  next(new NotFoundError("Страница не найдена"));
-});
 
 app.use(errors());
 
