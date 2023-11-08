@@ -45,6 +45,8 @@ module.exports.deleteCard = (req, res, next) => {
     .catch((err) => {
       if (err instanceof TypeError) {
         next(new NotFoundError("Карточка не найдена"));
+      } else if (err instanceof mongoose.Error.CastError) {
+        next(new BadRequestError("Переданы некорректные данные"));
       } else {
         next(err);
       }
@@ -89,7 +91,6 @@ module.exports.dislikeCard = (req, res, next) => {
     { new: true }
   )
     .orFail()
-    .populate(["owner", "likes"])
     .then((card) => {
       res.status(httpConstants.HTTP_STATUS_OK).send(card);
     })
