@@ -1,6 +1,7 @@
-const Card = require("../models/card");
-const httpConstants = require("http2").constants;
 const mongoose = require("mongoose");
+const httpConstants = require("http2").constants;
+
+const Card = require("../models/card");
 const BadRequestError = require("../errors/BadRequest");
 const NotFoundError = require("../errors/NotFound");
 const ForbiddenError = require("../errors/Forbidden");
@@ -65,7 +66,7 @@ module.exports.likeCard = (req, res, next) => {
     {
       $addToSet: { likes: req.user._id },
     },
-    { new: true }
+    { new: true },
   )
     .orFail()
     .then((card) => {
@@ -88,7 +89,7 @@ module.exports.dislikeCard = (req, res, next) => {
     {
       $pull: { likes: req.user._id },
     },
-    { new: true }
+    { new: true },
   )
     .orFail()
     .then((card) => {

@@ -21,7 +21,10 @@ module.exports = {
   },
   rules: {
     "no-console": "off",
-    quotes: ["error", "single"],
-    "no-underscore-dangle": "0",
+    quotes: ["error", "double"],
+    "no-underscore-dangle": 0,
+    "comma-dangle": "off",
+    "no-useless-escape": "off",
+    "consistent-return": "off",
   },
 };

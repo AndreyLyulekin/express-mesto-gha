@@ -1,7 +1,7 @@
 const router = require("express").Router();
 const { celebrate, Joi } = require("celebrate");
-const urlValidation =
-  /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
+
+const urlValidation = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
 
 const {
   getUsers,
@@ -21,7 +21,7 @@ router.get(
       userId: Joi.string().length(24).hex().required(),
     }),
   }),
-  getUserById
+  getUserById,
 );
 
 router.patch(
@@ -32,7 +32,7 @@ router.patch(
       about: Joi.string().min(2).max(30),
     }),
   }),
-  editUserData
+  editUserData,
 );
 
 router.patch(
@@ -42,7 +42,7 @@ router.patch(
       avatar: Joi.string().pattern(urlValidation),
     }),
   }),
-  editUserAvatar
+  editUserAvatar,
 );
 
 module.exports = router;

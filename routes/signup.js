@@ -1,8 +1,8 @@
 const router = require("express").Router();
 const { celebrate, Joi } = require("celebrate");
 const { addUser } = require("../controllers/users");
-const urlValidation =
-  /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
+
+const urlValidation = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/;
 
 router.post(
   "/",
@@ -17,7 +17,7 @@ router.post(
       })
       .unknown(true),
   }),
-  addUser
+  addUser,
 );
 
 module.exports = router;

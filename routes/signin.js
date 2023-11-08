@@ -10,7 +10,7 @@ router.post(
       password: Joi.string().required(),
     }),
   }),
-  login
+  login,
 );
 
 module.exports = router;

@@ -1,8 +1,8 @@
-const User = require("../models/user");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const httpConstants = require("http2").constants;
 const mongoose = require("mongoose");
+const httpConstants = require("http2").constants;
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const User = require("../models/user");
 const BadRequestError = require("../errors/BadRequest");
 const NotFoundError = require("../errors/NotFound");
 const ConflictError = require("../errors/Conflict");
@@ -35,7 +35,7 @@ module.exports.editUserData = (req, res, next) => {
   User.findByIdAndUpdate(
     req.user._id,
     { name, about },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .orFail()
     .then((user) => res.status(httpConstants.HTTP_STATUS_OK).send(user))
@@ -54,7 +54,7 @@ module.exports.editUserAvatar = (req, res, next) => {
   User.findByIdAndUpdate(
     req.user._id,
     { avatar: req.body.avatar },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .orFail()
     .then((user) => res.status(httpConstants.HTTP_STATUS_OK).send(user))
@@ -70,26 +70,24 @@ module.exports.editUserAvatar = (req, res, next) => {
 };
 
 module.exports.addUser = (req, res, next) => {
-  const { name, about, avatar, email, password } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
   bcrypt
     .hash(password, 10)
-    .then((hash) =>
-      User.create({
-        name,
-        about,
-        avatar,
-        email,
-        password: hash,
-      }).then((user) =>
-        res.status(httpConstants.HTTP_STATUS_CREATED).send({
-          name: user.name,
-          about: user.about,
-          avatar: user.avatar,
-          _id: user._id,
-          email: user.email,
-        })
-      )
-    )
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }).then((user) => res.status(httpConstants.HTTP_STATUS_CREATED).send({
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      _id: user._id,
+      email: user.email,
+    })))
     .catch((err) => {
       if (err.code === 11000) {
         next(new ConflictError("Пользаватель уже зарегистрирован"));
